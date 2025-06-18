@@ -14,9 +14,9 @@ import {
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TaskStatus } from './enums/task-status.enum';
-import { TaskPriority } from './enums/task-priority.enum';
+import { TaskFilterDto } from './dto/task-filter.dto';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -40,30 +40,8 @@ export class TasksController {
 
   @Get()
   @ApiOperation({ summary: 'Find all tasks with optional filtering' })
-  @ApiQuery({ name: 'status', required: false })
-  @ApiQuery({ name: 'priority', required: false })
-  @ApiQuery({ name: 'page', required: false })
-  @ApiQuery({ name: 'limit', required: false })
-  async findAll(
-    @Query('status') status?: string,
-    @Query('priority') priority?: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    let statusEnum: TaskStatus | undefined = undefined;
-    let priorityEnum: TaskPriority | undefined = undefined;
-    if (status && Object.values(TaskStatus).includes(status as TaskStatus)) {
-      statusEnum = status as TaskStatus;
-    }
-    if (priority && Object.values(TaskPriority).includes(priority as TaskPriority)) {
-      priorityEnum = priority as TaskPriority;
-    }
-    return this.tasksService.findAll({
-      status: statusEnum,
-      priority: priorityEnum,
-      page: Number(page),
-      limit: Number(limit),
-    });
+  async findAll(@Query() filter: TaskFilterDto) {
+    return this.tasksService.findAll(filter);
   }
 
   @Get(':id')

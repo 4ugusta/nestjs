@@ -6,6 +6,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { CacheService } from '../../common/services/cache.service';
 import { TaskStatus } from './enums/task-status.enum';
 import { TaskPriority } from './enums/task-priority.enum';
 
@@ -16,6 +17,7 @@ export class TasksService {
     private tasksRepository: Repository<Task>,
     @InjectQueue('task-processing')
     private taskQueue: Queue,
+    private cache: CacheService,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -53,14 +55,19 @@ export class TasksService {
   }
 
   async findOne(id: string): Promise<Task> {
-    const count = await this.tasksRepository.count({ where: { id } });
-    if (count === 0) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
-    }
-    return (await this.tasksRepository.findOne({
+    const cacheKey = `task:${id}`;
+    const cached = await this.cache.get<Task>(cacheKey);
+    if (cached) return cached;
+
+    const task = await this.tasksRepository.findOne({
       where: { id },
       relations: ['user'],
-    })) as Task;
+    });
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+    await this.cache.set(cacheKey, task, 60);
+    return task;
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
@@ -78,12 +85,14 @@ export class TasksService {
         status: updatedTask.status,
       });
     }
+    await this.cache.set(`task:${id}`, updatedTask, 60);
     return updatedTask;
   }
 
   async remove(id: string): Promise<void> {
     const task = await this.findOne(id);
     await this.tasksRepository.remove(task);
+    await this.cache.delete(`task:${id}`);
   }
 
   async findByStatus(status: TaskStatus): Promise<Task[]> {

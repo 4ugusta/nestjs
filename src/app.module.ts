@@ -9,6 +9,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TaskProcessorModule } from './queues/task-processor/task-processor.module';
 import { ScheduledTasksModule } from './queues/scheduled-tasks/scheduled-tasks.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { ScheduledTasksModule } from './queues/scheduled-tasks/scheduled-tasks.m
     UsersModule,
     TasksModule,
     AuthModule,
+    HealthModule,
 
     // Queue processing modules
     TaskProcessorModule,

@@ -3,6 +3,7 @@ import { TasksService } from './tasks.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { CacheService } from '../../common/services/cache.service';
 
 type MockRepo = {
   create: jest.Mock;
@@ -41,6 +42,7 @@ describe('TasksService', () => {
         TasksService,
         { provide: getRepositoryToken(Task), useValue: repo },
         { provide: 'BullQueue_task-processing', useValue: queue },
+        { provide: CacheService, useValue: { set: jest.fn(), get: jest.fn() } },
       ],
     }).compile();
     service = module.get<TasksService>(TasksService);

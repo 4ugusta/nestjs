@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 
@@ -10,7 +12,7 @@ async function bootstrap() {
   // Helmet for security headers
   app.use(helmet());
 
-  // Global validation pipe
+  // Global pipes, filters and interceptors
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -21,6 +23,8 @@ async function bootstrap() {
       },
     }),
   );
+  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // CORS
   app.enableCors();

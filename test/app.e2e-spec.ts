@@ -67,5 +67,11 @@ describe('AppController (e2e)', () => {
     expect(res.body.user.email).toBe('testlogin@example.com');
   });
 
+  it('/health (GET) - should return ok', async () => {
+    const res = await request(app.getHttpServer()).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+
   // Add more tests as needed
 });
