@@ -4,6 +4,7 @@ import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -16,25 +17,28 @@ export class AuthService {
     const { email, password } = loginDto;
 
     const user = await this.usersService.findByEmail(email);
-    
+
     if (!user) {
       throw new UnauthorizedException('Invalid email');
     }
 
     const passwordValid = await bcrypt.compare(password, user.password);
-    
+
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid password');
     }
 
-    const payload = { 
-      sub: user.id, 
-      email: user.email, 
-      role: user.role
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
     };
-
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = uuidv4();
+    await this.usersService.setRefreshToken(user.id, refreshToken);
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -51,9 +55,10 @@ export class AuthService {
     }
 
     const user = await this.usersService.create(registerDto);
-
-    const token = this.generateToken(user.id);
-
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = uuidv4();
+    await this.usersService.setRefreshToken(user.id, refreshToken);
     return {
       user: {
         id: user.id,
@@ -61,7 +66,21 @@ export class AuthService {
         name: user.name,
         role: user.role,
       },
-      token,
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    };
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.usersService.getUserIfRefreshTokenMatches(userId, refreshToken);
+    if (!user) throw new UnauthorizedException('Invalid refresh token');
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(payload);
+    const newRefreshToken = uuidv4();
+    await this.usersService.setRefreshToken(user.id, newRefreshToken);
+    return {
+      access_token: accessToken,
+      refresh_token: newRefreshToken,
     };
   }
 
@@ -70,17 +89,15 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  async validateUser(userId: string): Promise<any> {
+  async validateUser(userId: string): Promise<import('../users/entities/user.entity').User | null> {
     const user = await this.usersService.findOne(userId);
-    
     if (!user) {
       return null;
     }
-    
     return user;
   }
 
-  async validateUserRoles(userId: string, requiredRoles: string[]): Promise<boolean> {
+  async validateUserRoles(_userId: string, _requiredRoles: string[]): Promise<boolean> {
     return true;
   }
-} 
+}

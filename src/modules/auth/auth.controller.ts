@@ -18,4 +18,9 @@ export class AuthController {
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
-} 
+
+  @Post('refresh')
+  refresh(@Body() body: { userId: string; refreshToken: string }) {
+    return this.authService.refreshTokens(body.userId, body.refreshToken);
+  }
+}

@@ -4,7 +4,7 @@ import { TaskStatus } from '../enums/task-status.enum';
 import { TaskPriority } from '../enums/task-priority.enum';
 
 export class CreateTaskDto {
-  @ApiProperty({ example: 'Complete project documentation' })
+  @ApiProperty({ example: 'Complete project documentation', description: 'Title of the task' })
   @IsString()
   @IsNotEmpty()
   title: string;
@@ -14,12 +14,12 @@ export class CreateTaskDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ enum: TaskStatus, example: TaskStatus.PENDING, required: false })
+  @ApiProperty({ enum: TaskStatus, default: TaskStatus.PENDING, required: false })
   @IsEnum(TaskStatus)
   @IsOptional()
   status?: TaskStatus;
 
-  @ApiProperty({ enum: TaskPriority, example: TaskPriority.MEDIUM, required: false })
+  @ApiProperty({ enum: TaskPriority, default: TaskPriority.MEDIUM, required: false })
   @IsEnum(TaskPriority)
   @IsOptional()
   priority?: TaskPriority;
@@ -33,4 +33,4 @@ export class CreateTaskDto {
   @IsUUID()
   @IsNotEmpty()
   userId: string;
-} 
+}

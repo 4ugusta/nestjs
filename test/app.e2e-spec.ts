@@ -38,5 +38,34 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer()).get('/').expect(401);
   });
 
+  it('/auth/register (POST) - should register a new user', async () => {
+    const res = await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'testuser@example.com',
+      name: 'Test User',
+      password: 'testpassword',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.user).toBeDefined();
+    expect(res.body.user.email).toBe('testuser@example.com');
+  });
+
+  it('/auth/login (POST) - should login and return tokens', async () => {
+    // Register first (if not already registered)
+    await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'testlogin@example.com',
+      name: 'Test Login',
+      password: 'testpassword',
+    });
+    // Now login
+    const res = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'testlogin@example.com',
+      password: 'testpassword',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.access_token).toBeDefined();
+    expect(res.body.refresh_token).toBeDefined();
+    expect(res.body.user.email).toBe('testlogin@example.com');
+  });
+
   // Add more tests as needed
 });

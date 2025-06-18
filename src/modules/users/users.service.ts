@@ -40,11 +40,9 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
-    
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
-    
     this.usersRepository.merge(user, updateUserDto);
     return this.usersRepository.save(user);
   }
@@ -53,4 +51,20 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
   }
-} 
+
+  async setRefreshToken(userId: string, refreshToken: string): Promise<void> {
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    await this.usersRepository.update(userId, { refreshToken: hashedToken });
+  }
+
+  async clearRefreshToken(userId: string): Promise<void> {
+    await this.usersRepository.update(userId, { refreshToken: undefined });
+  }
+
+  async getUserIfRefreshTokenMatches(userId: string, refreshToken: string): Promise<User | null> {
+    const user = await this.findOne(userId);
+    if (!user || !user.refreshToken) return null;
+    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    return isMatch ? user : null;
+  }
+}
